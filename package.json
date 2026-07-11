@@ -1,0 +1,28 @@
+{
+  "name": "ez-circle-agent",
+  "version": "0.1.0",
+  "description": "Web3-enabled AI agent with an autonomous Circle wallet and hardcoded spending guardrails",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.74.0",
+    "@circle-fin/developer-controlled-wallets": "^9.0.0",
+    "dotenv": "^17.2.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

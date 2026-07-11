@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.env
+recovery_file_*.dat
+*.log
