@@ -7,9 +7,15 @@ A Web3-enabled AI agent (TypeScript / Node.js ESM) with an autonomous **Agent Wa
 ```
 src/
 ├── index.ts              CLI entry (interactive chat + `setup` command)
-├── agent.ts              LLM orchestration (Anthropic tool runner, claude-opus-4-8)
-├── config.ts             .env loading & validation
-├── tools/walletTools.ts  LLM tool definitions (thin adapters over the wallet layer)
+├── agent.ts              Provider dispatch (Gemini by default, Anthropic switchable)
+├── config.ts             .env loading & validation (AI_PROVIDER selection)
+├── providers/
+│   ├── systemPrompt.ts   Shared agent persona/rules
+│   ├── gemini.ts         Google Gen AI function-calling loop + GeminiSummarizer
+│   └── anthropic.ts      Anthropic tool-runner agent
+├── tools/
+│   ├── walletToolSpecs.ts Provider-neutral tool specs (zod schemas + guardrailed execute)
+│   └── walletTools.ts     Anthropic adapter over the neutral specs
 └── wallet/
     ├── types.ts          WalletService interface (AI layer never touches Circle directly)
     ├── guardrail.ts      ★ Hardcoded 5 USDC per-transaction cap + input validation
@@ -36,7 +42,9 @@ cp .env.example .env
    npm start -- setup        # prints a new entity secret → paste into .env
    npm start -- setup        # registers it with Circle (saves a recovery file)
    ```
-3. Set `ANTHROPIC_API_KEY`.
+3. Pick your LLM provider (both the chat CLI and the paid API honor it):
+   - **Google (default):** set `GEMINI_API_KEY` (from [AI Studio](https://aistudio.google.com/apikey)). Model defaults to `gemini-2.5-flash`; override with `GEMINI_MODEL` (e.g. `gemini-3-flash` if available on your key).
+   - **Anthropic:** set `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`. Model defaults to `claude-opus-4-8`.
 4. Run the agent:
    ```bash
    npm start
