@@ -71,6 +71,34 @@ TEST_RECIPIENT_ADDRESS=0x...   # where the 1 USDC goes
 
 then run `npm test` again — `tests/live-transfer.test.ts` un-skips itself.
 
-## x402 readiness
+## x402 Paid API — premium summarizer
 
-The `WalletService` abstraction and structured `TransferReceipt` are designed so an HTTP x402 nanopayment handler can be layered on: on a `402 Payment Required` response, parse the payment header, call `transferUsdc()` (guardrail still applies), and retry with the payment proof.
+The agent doubles as a **paid API**: an Express server that sells AI text summarization for **0.002 USDC per request** over the [x402 payment protocol](https://x402.org), with payouts settling to the agent's Circle wallet.
+
+```
+src/server/
+├── index.ts       Server entry — resolves payout address (Circle wallet), starts Express
+├── app.ts         x402 payment gate (0.002 USDC) + POST /summarize route
+└── summarizer.ts  Anthropic-powered summarization (claude-opus-4-8)
+src/client/payDemo.ts  Demo client that auto-pays 402s with x402-fetch + viem
+```
+
+**Flow:** a request without payment gets `402 Payment Required` plus machine-readable payment requirements (`payTo`, network, `maxAmountRequired: 2000` USDC base units). The client signs a USDC payment authorization, retries with an `X-PAYMENT` header, the facilitator verifies + settles it on-chain, and the summary is returned with an `X-PAYMENT-RESPONSE` settlement receipt.
+
+```bash
+npm run serve          # starts on :3000; payTo = agent's Circle wallet
+                       # (or set PAYMENT_RECEIVING_ADDRESS to override)
+
+# free endpoint
+curl localhost:3000/health
+
+# paywalled endpoint → 402 with payment requirements
+curl -X POST localhost:3000/summarize -H 'Content-Type: application/json' -d '{"text":"..."}'
+
+# paying client (needs a funded base-sepolia testnet key)
+CLIENT_PRIVATE_KEY=0x... npm run demo:client
+```
+
+Configuration (`.env`): `X402_NETWORK` (default `base-sepolia`), `X402_FACILITATOR_URL` to point verification/settlement at Circle's x402 facilitator (defaults to the public x402.org testnet facilitator), `PAYMENT_RECEIVING_ADDRESS` to override the payout wallet.
+
+`tests/paid-api.test.ts` covers the gate offline: the **real** x402 middleware answering unpaid requests with correct payment requirements (0.002 USDC → 2000 base units), the free health route, and the paid path returning summaries once payment is attached.
