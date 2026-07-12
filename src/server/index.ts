@@ -1,8 +1,9 @@
 import "dotenv/config";
 import type { Network } from "x402-express";
-import { loadConfig } from "../config.js";
+import { loadConfig, resolveAiProvider } from "../config.js";
 import { CircleWalletService } from "../wallet/circleWallet.js";
-import { AnthropicSummarizer } from "./summarizer.js";
+import { AnthropicSummarizer, type Summarizer } from "./summarizer.js";
+import { GeminiSummarizer } from "../providers/gemini.js";
 import { createApp, PRICE_USD, SUMMARIZE_ROUTE } from "./app.js";
 
 /**
@@ -37,19 +38,24 @@ async function main(): Promise<void> {
   const facilitatorUrl = process.env.X402_FACILITATOR_URL || undefined;
   const port = Number(process.env.PORT || 3000);
 
-  const app = createApp({
-    payTo,
-    network,
-    facilitatorUrl,
-    summarizer: new AnthropicSummarizer(
-      process.env.ANTHROPIC_API_KEY,
-      process.env.ANTHROPIC_MODEL || "claude-opus-4-8",
-    ),
-  });
+  const provider = resolveAiProvider();
+  const summarizer: Summarizer =
+    provider === "anthropic"
+      ? new AnthropicSummarizer(
+          process.env.ANTHROPIC_API_KEY,
+          process.env.ANTHROPIC_MODEL || "claude-opus-4-8",
+        )
+      : new GeminiSummarizer(
+          process.env.GEMINI_API_KEY,
+          process.env.GEMINI_MODEL || "gemini-2.5-flash",
+        );
+
+  const app = createApp({ payTo, network, facilitatorUrl, summarizer });
 
   app.listen(port, () => {
     console.log(`Paid summarizer listening on http://localhost:${port}`);
     console.log(`  POST ${SUMMARIZE_ROUTE}  — ${PRICE_USD} USDC per request (x402, ${network})`);
+    console.log(`  AI provider: ${provider}`);
     console.log(`  payments settle to ${payTo}`);
     console.log(`  facilitator: ${facilitatorUrl ?? "default (x402.org testnet facilitator)"}`);
   });

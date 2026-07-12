@@ -76,7 +76,9 @@ async function main(): Promise<void> {
   });
 
   const info = await wallet.init();
-  console.log(`Agent wallet ready: ${info.address} on ${info.blockchain}\n`);
+  const model = config.aiProvider === "gemini" ? config.geminiModel : config.anthropicModel;
+  console.log(`Agent wallet ready: ${info.address} on ${info.blockchain}`);
+  console.log(`AI provider: ${config.aiProvider} (${model})\n`);
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   console.log('Chat with your agent (e.g. "What is my balance?", "Send 1 USDC to 0x..."). Ctrl+C to exit.\n');
@@ -86,8 +88,9 @@ async function main(): Promise<void> {
     if (!userMessage) continue;
     try {
       const reply = await runAgent(userMessage, wallet, {
-        apiKey: config.anthropicApiKey,
-        model: config.anthropicModel,
+        provider: config.aiProvider,
+        apiKey: config.aiProvider === "gemini" ? config.geminiApiKey : config.anthropicApiKey,
+        model,
       });
       console.log(`\nagent> ${reply}\n`);
     } catch (err) {
